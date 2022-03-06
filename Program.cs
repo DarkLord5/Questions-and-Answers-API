@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
 using Questions_and_Answers_API.Models;
+using Questions_and_Answers_API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,16 @@ builder.Services.AddDbContext<QAAppContext>(options => options.UseSqlServer(conn
 
 builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<QAAppContext>();
+
+builder.Services.AddTransient<ITagService, TagService>();
+
+builder.Services.AddTransient<IQuestionService, QuestionService>();
+
+builder.Services.AddTransient<IAnswerService, AnswerService>();
+
+builder.Services.AddTransient<IUserService, UserService>();
+
+builder.Services.AddTransient<IQuestionRatingService, QuestionRatingService>();
 
 var app = builder.Build();
 
