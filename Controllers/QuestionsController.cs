@@ -3,113 +3,250 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
 using Questions_and_Answers_API.Models;
+using Questions_and_Answers_API.Services;
+using Questions_and_Answers_API.ViewModel;
 
 namespace Questions_and_Answers_API.Controllers
 {
-    [Route("api/[controller]")]
+
     [ApiController]
     public class QuestionsController : ControllerBase
     {
-        private readonly QAAppContext _context;
-        public QuestionsController(QAAppContext context)
+        readonly private IQuestionService _questionService;
+        readonly private IAnswerService _answerService;
+        readonly private IQuestionRatingService _questionRatingService;
+        readonly private IAnswerRatingService _answerRatingService;
+        readonly private UserManager<User> _userManager;
+
+        public QuestionsController(IQuestionService questionService, IAnswerService answerService,
+            IQuestionRatingService questionRatingService, IAnswerRatingService answerRatingService, UserManager<User> userManager)
         {
-            _context = context;
+            _questionService = questionService;
+            _answerService = answerService;
+            _questionRatingService = questionRatingService;
+            _answerRatingService = answerRatingService;
+            _userManager = userManager;
         }
 
-        // GET: api/Questions
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Question>>> GetQuestions()
-        {
-            return await _context.Questions.ToListAsync();
-        }
 
-        // GET: api/Questions/5
         [HttpGet]
-        [Route("{id}")]
-        public async Task<ActionResult<Question>> GetQuestion(Guid id)
+        [Route("api/Question")]
+        public async Task<ActionResult<List<QuestionViewModel>>> GetAllQuestions()
         {
-            var question = await _context.Questions.FindAsync(id);
+            var questionsWithRatings = new List<QuestionViewModel>();
 
-            if (question == null)
+            var questions = await _questionService.GetAlQuestionsAsync();
+
+            foreach (Question question in questions)
             {
-                return NotFound();
+                questionsWithRatings.Add(new QuestionViewModel()
+                {
+                    Question = question,
+                    Rating = await _questionRatingService.GetQuestionRating(question.Id)
+                });
             }
-            var answers = await _context.Answers.Where(a=>a.QuestionId==id).ToListAsync();
 
-            var qaList = new Dictionary<Question, List<Answer>> { { question, answers } };
+            return Ok(questionsWithRatings);
+        }
+
+        [HttpGet]
+        [Route("api/Question/Filter/{tag}")]
+        public async Task<ActionResult<List<QuestionViewModel>>> GetFiltredQuestions(string tag)
+        {
+            var questionsWithRatings = new List<QuestionViewModel>();
+
+            var questions = await _questionService.FindByTagNameAsync(tag);
+
+            foreach (Question question in questions)
+            {
+                questionsWithRatings.Add(new QuestionViewModel()
+                {
+                    Question = question,
+                    Rating = await _questionRatingService.GetQuestionRating(question.Id)
+                });
+            }
+
+            return Ok(questionsWithRatings);
+        }
+
+
+        [HttpGet]
+        [Route("api/Question/{id}")]
+        public async Task<ActionResult<QuestionWithAnswersViewModel>> GetSelectedQuestion(Guid id)
+        {
+            var qViewModel = new QuestionViewModel()
+            {
+                Question = await _questionService.GetQuestionAsync(id),
+                Rating = await _questionRatingService.GetQuestionRating(id)
+            };
+
+            var answerList = await _answerService.GetAnswersAsync(id);
+
+            var answersWithRating = new List<AnswerViewModel>();
+
+            foreach (var answer in answerList)
+            {
+                answersWithRating.Add(new AnswerViewModel()
+                {
+                    Answer = answer,
+                    Rating = await _answerRatingService.GetAnswerRating(answer.Id)
+                });
+            }
+
+            var qaList = new QuestionWithAnswersViewModel
+            {
+                QuestionViewModel = qViewModel,
+
+                Answers = answersWithRating
+            };
 
             return Ok(qaList);
         }
 
-        // PUT: api/Questions/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut]
-        [Route("{id}")]
-        public async Task<IActionResult> PutQuestion(Guid id, Question question)
-        {
-            if (id != question.Id)
-            {
-                return BadRequest();
-            }
 
-            _context.Entry(question).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuestionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-
-        // POST: api/Questions
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Question>> PostQuestion(Question question)
+        [Route("api/Question")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<Question>> CreateQuestion(Question question)
         {
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
 
-            return CreatedAtAction("GetQuestion", new { id = question.Id }, question);
+            return Ok(await _questionService.CreateQuestionAsync(question, currentUser));
         }
 
-        // DELETE: api/Questions/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteQuestion(Guid id)
+        [HttpPost]
+        [Route("api/Question/{id}/Answer")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<List<Answer>>> CreateAnswer(Guid id, Answer answer)
         {
-            var question = await _context.Questions.FindAsync(id);
-            if (question == null)
+            answer.QuestionId = id;
+
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            return Ok(await _answerService.CreateAnswerAsync(answer, currentUser));
+        }
+
+        [HttpPut]
+        [Route("api/Question/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<Question>> UpdateQuestion(Guid id, Question question)
+        {
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            question.UserId = user.Id;
+
+            var res = await _questionService.UpdateQuestion(question, id);
+
+            if (res != null)
             {
-                return NotFound();
+                return Ok(res);
             }
-
-            _context.Questions.Remove(question);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return BadRequest("Invalid input data");
         }
 
-        private bool QuestionExists(Guid id)
+        [HttpPut]
+        [Route("api/Question/{id}/Answer/{answerId}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<List<Answer>>> UpdateAnswer(Answer answer, Guid id, Guid answerId)
         {
-            return _context.Questions.Any(e => e.Id == id);
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            answer.UserId = user.Id;
+
+            return Ok(await _answerService.UpdateAnswerAsync(answer, answerId, id));
+        }
+
+        [HttpDelete]
+        [Route("api/Question/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<List<Question>>> DeleteQuestion(Guid id) 
+        {
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            var question = new Question()
+            {
+                Id = id,
+                UserId = user.Id
+            };
+
+            return(Ok(await _questionService.DeleteQuestion(question)));
+        }
+            
+
+
+        [HttpDelete]
+        [Route("api/Question/{id}/Answer/{answerId}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<List<Answer>>> DeleteAnswer(Guid id, Guid answerId)
+        {
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            var answer = new Answer()
+            {
+                Id = answerId,
+                UserId = user.Id
+            };
+
+            return Ok(await _answerService.DeleteAnswerAsync(id, answer));
+        }
+
+
+
+        [HttpPut]
+        [Route("api/Question/Rating/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<int>> ChangeQRating(Guid id, bool mark)
+        {
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            await _questionRatingService.CreateRating(currentUser, id, mark);
+
+            return Ok(await _questionRatingService.GetQuestionRating(id));
+        }
+
+        [HttpDelete]
+        [Route("api/Question/Rating/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<int>> DeleteQRating(Guid id)
+        {
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            await _questionRatingService.DeleteRating(currentUser, id);
+
+            return Ok(await _questionRatingService.GetQuestionRating(id));
+        }
+
+
+        [HttpPut]
+        [Route("api/Answer/Rating/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<int>> ChangeARating(Guid id, bool mark)
+        {
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            await _answerRatingService.CreateRating(currentUser, id, mark);
+
+            return Ok(await _answerRatingService.GetAnswerRating(id));
+        }
+
+
+        [HttpDelete]
+        [Route("api/Answer/Rating/{id}")]
+        [Authorize(Roles = "admin,user")]
+        public async Task<ActionResult<int>> DeleteARating(Guid id)
+        {
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            await _answerRatingService.DeleteRating(currentUser, id);
+
+            return Ok(await _answerRatingService.GetAnswerRating(id));
         }
     }
 }

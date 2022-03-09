@@ -44,6 +44,7 @@ namespace Questions_and_Answers_API.Data
             modelBuilder.Entity<Question>().Property(q => q.Title).HasMaxLength(40).IsRequired();
             modelBuilder.Entity<Question>().Property(q => q.Description).HasMaxLength(1000).IsRequired();
             
+            
 
             modelBuilder.Entity<Answer>().Property(a=>a.Text).HasMaxLength(1000).IsRequired();
             modelBuilder.Entity<Answer>().HasOne(a => a.Question).WithMany().OnDelete(DeleteBehavior.NoAction);
