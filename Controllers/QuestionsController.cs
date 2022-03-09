@@ -166,7 +166,7 @@ namespace Questions_and_Answers_API.Controllers
         [HttpDelete]
         [Route("api/Question/{id}")]
         [Authorize(Roles = "admin,user")]
-        public async Task<ActionResult<List<Question>>> DeleteQuestion(Guid id) 
+        public async Task<ActionResult<List<Question>>> DeleteQuestion(Guid id)
         {
             var user = await _userManager.FindByNameAsync(User.Identity.Name);
 
@@ -176,9 +176,9 @@ namespace Questions_and_Answers_API.Controllers
                 UserId = user.Id
             };
 
-            return(Ok(await _questionService.DeleteQuestion(question)));
+            return (Ok(await _questionService.DeleteQuestion(question)));
         }
-            
+
 
 
         [HttpDelete]

@@ -17,16 +17,21 @@ namespace Questions_and_Answers_API.Services
 
         public async Task<User> Registration(RegistrationViewModel newUser)
         {
-            
-            User user = new() { Email = newUser.Email, UserName = newUser.Email, 
-                FirstName = newUser.Name, SecondName = newUser.Surname};
-            
+
+            User user = new()
+            {
+                Email = newUser.Email,
+                UserName = newUser.Email,
+                FirstName = newUser.Name,
+                SecondName = newUser.Surname
+            };
+
             var result = await _userManager.CreateAsync(user, newUser.Password);
 
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, "user");
-                
+
                 await _signInManager.SignInAsync(user, false);
 
                 return user;
@@ -38,12 +43,10 @@ namespace Questions_and_Answers_API.Services
         public async Task<bool> Login(LoginViewModel user)
         {
 
-            var result =
-                    await _signInManager.PasswordSignInAsync(user.Email, user.Password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(user.Email, user.Password, false, false);
 
             if (result.Succeeded)
             {
-
                 return true;
             }
 
@@ -53,7 +56,8 @@ namespace Questions_and_Answers_API.Services
         public async Task Logout()
         {
             await _signInManager.SignOutAsync();
-        }
 
+            throw new Exception("Got ya");
+        }
     }
 }
