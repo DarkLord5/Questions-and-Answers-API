@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
+using Questions_and_Answers_API.Middlewars;
 using Questions_and_Answers_API.Models;
 using Questions_and_Answers_API.Services;
 
@@ -48,5 +49,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.Run();

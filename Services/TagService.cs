@@ -20,7 +20,7 @@ namespace Questions_and_Answers_API.Services
         {
             var check = _context.Tags.Where(t => t.Name == tag.Name).First();
 
-            if ((check == null) && (tag.Name != null))
+            if (!(_context.Tags.Any(t => t.Name == tag.Name) && string.IsNullOrEmpty(tag.Name)))
             {
                 _context.Tags.Add(tag);
 
@@ -51,7 +51,7 @@ namespace Questions_and_Answers_API.Services
         {
             var newTag = new Tag() { Id = id, Name = tag.Name };
 
-            if (newTag.Name == null)
+            if (string.IsNullOrEmpty(newTag.Name))
             {
                 return await _context.Tags.Where(t => t.Id == id).FirstAsync();
             }
