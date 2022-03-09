@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Questions_and_Answers_API.Models;
 using Questions_and_Answers_API.Services;
@@ -7,6 +8,7 @@ namespace Questions_and_Answers_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "admin")]
     public class TagsController : ControllerBase
     {
         private readonly ITagService _tagService;

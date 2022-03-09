@@ -27,22 +27,29 @@ namespace Questions_and_Answers_API.Services
             return score;
         }
 
-        public async Task CreateRating(User currentUser, Question question, bool mark)
+        public async Task CreateRating(User currentUser, Guid questionId, bool mark)
         {
-            int score = mark ? 1 : 0;
+            var question = await _context.Questions.Where(q=>q.Id==questionId).FirstAsync();
 
-            var rating = new QuestionRating() { Mark = score, Question = question, User = currentUser };
+            if (!_context.QuestionsRating.Any(q=>(q.QuestionId==questionId)&&(q.UserId==currentUser.Id)))
+            { 
+                int score = mark ? 1 : -1;
 
-            _context.QuestionsRating.Add(rating);
+                var rating = new QuestionRating() { Mark = score, Question = question, User = currentUser };
 
-            await _context.SaveChangesAsync();
+                _context.QuestionsRating.Add(rating);
+
+                await _context.SaveChangesAsync();
+            }
         }
 
-        public async Task DeleteRating(User currentUser, Question question)
+        public async Task DeleteRating(User currentUser, Guid questionId)
         {
-            var rating = await _context.QuestionsRating.Where(qr => (qr.User == currentUser) && (qr.Question == question)).FirstAsync();
-            if(rating != null)
+            if (!_context.QuestionsRating.Any(q => (q.QuestionId == questionId) && (q.UserId == currentUser.Id)))
             {
+                var rating = await _context.QuestionsRating.Where
+                (qr => (qr.UserId == currentUser.Id) && (qr.QuestionId == questionId)).FirstAsync();
+
                 _context.QuestionsRating.Remove(rating);
 
                 await _context.SaveChangesAsync();

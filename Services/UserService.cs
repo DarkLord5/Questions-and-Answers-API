@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Questions_and_Answers_API.Models;
+using Questions_and_Answers_API.ViewModel;
 
 namespace Questions_and_Answers_API.Services
 {
@@ -14,12 +15,13 @@ namespace Questions_and_Answers_API.Services
             _signInManager = signInManager;
         }
 
-        public async Task<User> Registration(string email, string password, string name, string surname)
+        public async Task<User> Registration(RegistrationViewModel newUser)
         {
             
-            User user = new() { Email = email, UserName = email, FirstName = name, SecondName = surname};
+            User user = new() { Email = newUser.Email, UserName = newUser.Email, 
+                FirstName = newUser.Name, SecondName = newUser.Surname};
             
-            var result = await _userManager.CreateAsync(user, password);
+            var result = await _userManager.CreateAsync(user, newUser.Password);
 
             if (result.Succeeded)
             {
@@ -33,10 +35,11 @@ namespace Questions_and_Answers_API.Services
             return new User();
         }
 
-        public async Task<bool> Login(string email, string password)
+        public async Task<bool> Login(LoginViewModel user)
         {
+
             var result =
-                    await _signInManager.PasswordSignInAsync(email, password, false, false);
+                    await _signInManager.PasswordSignInAsync(user.Email, user.Password, false, false);
 
             if (result.Succeeded)
             {

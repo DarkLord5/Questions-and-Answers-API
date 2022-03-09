@@ -2,57 +2,64 @@
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
 using Questions_and_Answers_API.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 namespace Questions_and_Answers_API.Services
 {
     public class AnswerService : IAnswerService
     {
-        private readonly QAAppContext _context;
-        public AnswerService(QAAppContext context)
+        readonly private QAAppContext _context;
+        readonly private UserManager<User> _userManager;
+        public AnswerService(QAAppContext context, UserManager<User> userManager)
         {
+            _userManager = userManager;
             _context = context;
         }
 
-        public async Task<List<Answer>> GetAnswersAsync(Guid questionId) => 
-            await _context.Answers.Where(a=>a.QuestionId==questionId).ToListAsync();
-        
+        public async Task<List<Answer>> GetAnswersAsync(Guid questionId) =>
+            await _context.Answers.Where(a => a.QuestionId == questionId).ToListAsync();
 
-        public async Task<List<Answer>> CreateAnswerAsync(Answer answer, Question question, User currentUser)
+
+        public async Task<List<Answer>> CreateAnswerAsync(Answer answer, User currentUser)
         {
+            var parentQuestion = await _context.Questions.Where(q => q.Id == answer.QuestionId).FirstAsync();
+
             if (answer.Text == null)
             {
-                return await GetAnswersAsync(question.Id);
+                return await GetAnswersAsync(parentQuestion.Id);
             }
 
-            answer.Question = question;
+            answer.User = currentUser;
+            answer.TimeOfCreation = DateTime.UtcNow;
+            answer.TimeOfUpdate = DateTime.UtcNow;
+            answer.Tag = await _context.Tags.Where(t => t.Id == parentQuestion.TagId).FirstAsync();
 
-            answer.User= currentUser;
-
-            answer.TimeOfCreation = DateTime.Now;
-
-            answer.TimeOfUpdate = DateTime.Now;
-
-            answer.Tag = answer.Question.Tag;
+            _context.Entry(answer).State = EntityState.Detached;
 
             _context.Answers.Add(answer);
 
             await _context.SaveChangesAsync();
 
-            return await GetAnswersAsync(question.Id);
+            return await GetAnswersAsync(parentQuestion.Id);
         }
 
 
         public async Task<List<Answer>> UpdateAnswerAsync(Answer answer, Guid answerId, Guid questionId)
         {
-            if((answer.Text == null)||(answerId!=answer.Id)||(!_context.Answers.Any(a=>a.Id==answerId)))
+            var newAnswer = await _context.Answers.Where(a => a.Id == answerId).FirstAsync();
+
+            var user = await _userManager.Users.Where(u => u.Id == answer.UserId).FirstAsync();
+
+            if ((answer.Text == null) || (newAnswer == null) ||
+                ((answer.UserId != newAnswer.UserId) && (!await _userManager.IsInRoleAsync(user, "Admin"))))
             {
                 return await GetAnswersAsync(questionId);
             }
-            answer.TimeOfUpdate = DateTime.Now;
 
-            _context.Entry(answer).State = EntityState.Modified;
+            newAnswer.Text = answer.Text;
+
+            newAnswer.TimeOfUpdate = DateTime.UtcNow;
+
+            _context.Entry(newAnswer).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
 
@@ -60,12 +67,15 @@ namespace Questions_and_Answers_API.Services
         }
 
 
-        public async Task<List<Answer>> DeleteAnswerAsync(Guid questionId, Guid answerId)
+        public async Task<List<Answer>> DeleteAnswerAsync(Guid questionId, Answer answer)
         {
-            var answer = await _context.Answers.FindAsync(answerId);
+            var oldAnswer = await _context.Answers.FindAsync(answer.Id);
 
-            if (answer == null)  
-                return await GetAnswersAsync(questionId); 
+            var user = await _userManager.Users.Where(u => u.Id == answer.UserId).FirstAsync();
+
+            if ((oldAnswer == null) ||
+                ((answer.UserId != oldAnswer.UserId) && (!await _userManager.IsInRoleAsync(user, "Admin"))))
+                return await GetAnswersAsync(questionId);
 
             _context.Answers.Remove(answer);
 

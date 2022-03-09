@@ -30,6 +30,8 @@ builder.Services.AddTransient<IUserService, UserService>();
 
 builder.Services.AddTransient<IQuestionRatingService, QuestionRatingService>();
 
+builder.Services.AddTransient<IAnswerRatingService, AnswerRatingService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

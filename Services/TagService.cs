@@ -14,14 +14,14 @@ namespace Questions_and_Answers_API.Services
         }
 
         public async Task<List<Tag>> GetAllTagsAsync() => await _context.Tags.ToListAsync();
-        
+
 
         public async Task<Tag> CreateTagAsync(Tag tag)
         {
             var check = _context.Tags.Where(t => t.Name == tag.Name).First();
 
-            if((check == null)&&(tag.Name!=null)) 
-            { 
+            if ((check == null) && (tag.Name != null))
+            {
                 _context.Tags.Add(tag);
 
                 await _context.SaveChangesAsync();
@@ -46,23 +46,25 @@ namespace Questions_and_Answers_API.Services
             return await GetAllTagsAsync();
         }
 
-        
+
         public async Task<Tag> UpdateTagAsync(Guid id, Tag tag)
         {
-            if ((id != tag.Id)||(tag.Name == null))
+            var newTag = new Tag() { Id = id, Name = tag.Name };
+
+            if (newTag.Name == null)
             {
-                return await _context.Tags.Where(t=>t.Id == id).FirstAsync();
+                return await _context.Tags.Where(t => t.Id == id).FirstAsync();
             }
 
-            if(!_context.Tags.Any(e => e.Id == id)) { return new Tag(); }
+            if (!_context.Tags.Any(e => e.Id == id)) { return new Tag(); }
 
-            _context.Entry(tag).State = EntityState.Modified;
+            _context.Entry(newTag).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
-            
-            return tag;
+
+            return newTag;
         }
-        
+
 
     }
 }
