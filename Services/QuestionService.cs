@@ -7,8 +7,9 @@ namespace Questions_and_Answers_API.Services
 {
     public class QuestionService : IQuestionService
     {
+        const string Admin_Const = "admin";
 
-        private readonly QAAppContext _context;
+        readonly private QAAppContext _context;
         readonly private UserManager<User> _userManager;
         public QuestionService(QAAppContext context, UserManager<User> userManager)
         {
@@ -19,13 +20,13 @@ namespace Questions_and_Answers_API.Services
 
         public async Task<List<Question>> GetAlQuestionsAsync() => await _context.Questions.ToListAsync();
 
-        public async Task<Question> GetQuestionAsync(Guid questionId) => await _context.Questions.Where(q => q.Id == questionId).FirstAsync();
+        public async Task<Question> GetQuestionAsync(Guid questionId) =>
+            await _context.Questions.Where(q => q.Id == questionId).FirstAsync();
 
 
         public async Task<Question> CreateQuestionAsync(Question question, User currentUser)
         {
-
-            if ((question.Description == null) || (question.Title == null))
+            if (string.IsNullOrEmpty(question.Description) || string.IsNullOrEmpty(question.Title))
             {
                 return new Question();
             }
@@ -47,26 +48,27 @@ namespace Questions_and_Answers_API.Services
         }
 
 
-        public async Task<List<Question>> FindByTagNameAsync(string tagName) 
+        public async Task<List<Question>> FindByTagNameAsync(string tagName)
         {
-            if(_context.Tags.Any(t=>t.Name == tagName)) 
-            { 
-                var tag = await _context.Tags.Where(t=>t.Name == tagName).FirstAsync();
+            if (_context.Tags.Any(t => t.Name == tagName))
+            {
+                var tag = await _context.Tags.Where(t => t.Name == tagName).FirstAsync();
 
-               return await _context.Questions.Where(q => tag.Id == q.TagId).ToListAsync();
+                return await _context.Questions.Where(q => tag.Id == q.TagId).ToListAsync();
             }
+
             return new List<Question>();
         }
 
 
         public async Task<Question?> UpdateQuestion(Question question, Guid id)
         {
-            var newQuestion = await _context.Questions.Where(q=>q.Id == id).FirstAsync();
+            var newQuestion = await _context.Questions.Where(q => q.Id == id).FirstAsync();
 
             var user = await _userManager.Users.Where(u => u.Id == question.UserId).FirstAsync();
 
-            if ((string.IsNullOrEmpty(question.Title)) || (question.Description==null)|| (newQuestion==null) ||
-                ((question.UserId != newQuestion.UserId) && (!await _userManager.IsInRoleAsync(user, "Admin"))))
+            if (string.IsNullOrEmpty(question.Title) || string.IsNullOrEmpty(question.Description) || (newQuestion == null) ||
+                ((question.UserId != newQuestion.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
             {
                 return null;
             }
@@ -80,7 +82,6 @@ namespace Questions_and_Answers_API.Services
             await _context.SaveChangesAsync();
 
             return newQuestion;
-
         }
 
         public async Task<List<Question>> DeleteQuestion(Question question)
@@ -90,7 +91,7 @@ namespace Questions_and_Answers_API.Services
             var user = await _userManager.Users.Where(u => u.Id == question.UserId).FirstAsync();
 
             if ((oldQuesiton == null) ||
-                ((question.UserId != oldQuesiton.UserId) && (!await _userManager.IsInRoleAsync(user, "Admin")))) 
+                ((question.UserId != oldQuesiton.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
                 return await GetAlQuestionsAsync();
 
             _context.Questions.Remove(oldQuesiton);

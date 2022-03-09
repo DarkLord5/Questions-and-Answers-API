@@ -4,7 +4,7 @@ using Questions_and_Answers_API.Models;
 
 namespace Questions_and_Answers_API.Services
 {
-    public class AnswerRatingService: IAnswerRatingService
+    public class AnswerRatingService : IAnswerRatingService
     {
         private readonly QAAppContext _context;
         public AnswerRatingService(QAAppContext context)
@@ -28,7 +28,7 @@ namespace Questions_and_Answers_API.Services
 
         public async Task CreateRating(User currentUser, Guid answerId, bool mark)
         {
-            var answer = await _context.Answers.Where(a=>a.Id == answerId).FirstAsync();
+            var answer = await _context.Answers.Where(a => a.Id == answerId).FirstAsync();
 
             if (!_context.AnswersRating.Any(a => (a.AnswerId == answerId) && (a.UserId == currentUser.Id)))
             {

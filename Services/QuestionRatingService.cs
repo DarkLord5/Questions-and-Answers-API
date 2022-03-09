@@ -19,7 +19,7 @@ namespace Questions_and_Answers_API.Services
 
             var ratings = await _context.QuestionsRating.Where(qr => qr.QuestionId == id).ToListAsync();
 
-            foreach(var rating in ratings)
+            foreach (var rating in ratings)
             {
                 score += rating.Mark;
             }
@@ -29,10 +29,10 @@ namespace Questions_and_Answers_API.Services
 
         public async Task CreateRating(User currentUser, Guid questionId, bool mark)
         {
-            var question = await _context.Questions.Where(q=>q.Id==questionId).FirstAsync();
+            var question = await _context.Questions.Where(q => q.Id == questionId).FirstAsync();
 
-            if (!_context.QuestionsRating.Any(q=>(q.QuestionId==questionId)&&(q.UserId==currentUser.Id)))
-            { 
+            if (!_context.QuestionsRating.Any(q => (q.QuestionId == questionId) && (q.UserId == currentUser.Id)))
+            {
                 int score = mark ? 1 : -1;
 
                 var rating = new QuestionRating() { Mark = score, Question = question, User = currentUser };
