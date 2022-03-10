@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
+using Questions_and_Answers_API.Exceptions;
 using Questions_and_Answers_API.Models;
 
 namespace Questions_and_Answers_API.Services
@@ -25,9 +26,11 @@ namespace Questions_and_Answers_API.Services
                 _context.Tags.Add(tag);
 
                 await _context.SaveChangesAsync();
+
+                return tag;
             }
 
-            return tag;
+            throw new BadRequestException("This tag is empty or already exist!");
         }
 
         public async Task<List<Tag>> DeleteTagAsync(Guid id)
@@ -36,7 +39,7 @@ namespace Questions_and_Answers_API.Services
 
             if (tag == null)
             {
-                return await GetAllTagsAsync();
+                throw new BadRequestException("There is no such tag!");
             }
 
             _context.Tags.Remove(tag);
@@ -53,10 +56,11 @@ namespace Questions_and_Answers_API.Services
 
             if (string.IsNullOrEmpty(newTag.Name))
             {
-                return await _context.Tags.Where(t => t.Id == id).FirstAsync();
+                throw new BadRequestException("Your new tag is empty!");
             }
 
-            if (!_context.Tags.Any(e => e.Id == id)) { return new Tag(); }
+            if (!_context.Tags.Any(e => e.Id == id))
+                throw new BadRequestException("There is no such tag!");
 
             _context.Entry(newTag).State = EntityState.Modified;
 

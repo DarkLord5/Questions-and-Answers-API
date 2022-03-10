@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
+using Questions_and_Answers_API.Exceptions;
 using Questions_and_Answers_API.Models;
 
 namespace Questions_and_Answers_API.Services
@@ -40,6 +41,8 @@ namespace Questions_and_Answers_API.Services
 
                 await _context.SaveChangesAsync();
             }
+
+            throw new BadRequestException("You have already marked this post!");
         }
 
         public async Task DeleteRating(User currentUser, Guid answerId)
@@ -53,6 +56,8 @@ namespace Questions_and_Answers_API.Services
 
                 await _context.SaveChangesAsync();
             }
+
+            throw new BadRequestException("You haven't marked this post yet!");
         }
     }
 }
