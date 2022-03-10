@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
+using Questions_and_Answers_API.Exceptions;
 using Questions_and_Answers_API.Models;
 
 namespace Questions_and_Answers_API.Services
@@ -27,7 +28,7 @@ namespace Questions_and_Answers_API.Services
 
             if (string.IsNullOrEmpty(answer.Text))
             {
-                return await GetAnswersAsync(parentQuestion.Id);
+                throw new BadRequestException("There is no text in your answer!");
             }
 
             answer.User = currentUser;
@@ -54,7 +55,7 @@ namespace Questions_and_Answers_API.Services
             if (string.IsNullOrEmpty(answer.Text) || (newAnswer == null) ||
                 ((answer.UserId != newAnswer.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
             {
-                return await GetAnswersAsync(questionId);
+                throw new BadRequestException("You are not the owner of this answer or your new answer is empty!");
             }
 
             newAnswer.Text = answer.Text;
@@ -76,7 +77,7 @@ namespace Questions_and_Answers_API.Services
 
             if ((oldAnswer == null) ||
                 ((answer.UserId != oldAnswer.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
-                return await GetAnswersAsync(questionId);
+                throw new BadRequestException("You are not the owner of this answer!");
 
             _context.Answers.Remove(answer);
 

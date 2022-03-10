@@ -9,6 +9,6 @@ namespace Questions_and_Answers_API.Services
         public Task<Question> CreateQuestionAsync(Question question, User currentUser);
         public Task<List<Question>> FindByTagNameAsync(string tagName);
         public Task<List<Question>> DeleteQuestion(Question question);
-        public Task<Question?> UpdateQuestion(Question question, Guid id);
+        public Task<Question> UpdateQuestion(Question question, Guid id);
     }
 }

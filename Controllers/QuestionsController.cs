@@ -142,13 +142,7 @@ namespace Questions_and_Answers_API.Controllers
 
             question.UserId = user.Id;
 
-            var res = await _questionService.UpdateQuestion(question, id);
-
-            if (res != null)
-            {
-                return Ok(res);
-            }
-            return BadRequest("Invalid input data");
+            return Ok(await _questionService.UpdateQuestion(question, id));
         }
 
         [HttpPut]

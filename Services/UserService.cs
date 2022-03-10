@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Questions_and_Answers_API.Exceptions;
 using Questions_and_Answers_API.Models;
 using Questions_and_Answers_API.ViewModel;
 
@@ -37,7 +38,7 @@ namespace Questions_and_Answers_API.Services
                 return user;
             }
 
-            return new User();
+            throw new BadRequestException("Registration failed!");
         }
 
         public async Task<bool> Login(LoginViewModel user)
@@ -50,14 +51,12 @@ namespace Questions_and_Answers_API.Services
                 return true;
             }
 
-            return false;
+            throw new BadRequestException("Authorization failed!");
         }
 
         public async Task Logout()
         {
             await _signInManager.SignOutAsync();
-
-            throw new Exception("Got ya");
         }
     }
 }

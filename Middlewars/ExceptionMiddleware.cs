@@ -1,4 +1,6 @@
-﻿namespace Questions_and_Answers_API.Middlewars
+﻿using Questions_and_Answers_API.Exceptions;
+
+namespace Questions_and_Answers_API.Middlewars
 {
     public class ExceptionMiddleware
     {
@@ -15,10 +17,16 @@
             {
                 await _next.Invoke(httpContext);
             }
-            catch
+            catch(BadRequestException ex)
             {
-                httpContext.Response.StatusCode = 400; //Bad Request                
-                await httpContext.Response.WriteAsync("Bad value");
+                httpContext.Response.StatusCode = 400;              
+                await httpContext.Response.WriteAsync(ex.Message);
+                return;
+            }
+            catch (Exception)
+            {
+                httpContext.Response.StatusCode = 500;
+                await httpContext.Response.WriteAsync("Something went wrong!");
                 return;
             }
         }

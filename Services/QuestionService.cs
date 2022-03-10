@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Questions_and_Answers_API.Data;
+using Questions_and_Answers_API.Exceptions;
 using Questions_and_Answers_API.Models;
 
 namespace Questions_and_Answers_API.Services
@@ -28,7 +29,7 @@ namespace Questions_and_Answers_API.Services
         {
             if (string.IsNullOrEmpty(question.Description) || string.IsNullOrEmpty(question.Title))
             {
-                return new Question();
+                throw new BadRequestException("Your question doesn't contain a title or description!");
             }
 
             var tag = await _context.Tags.Where(t => t.Id == question.TagId).FirstAsync();
@@ -61,7 +62,7 @@ namespace Questions_and_Answers_API.Services
         }
 
 
-        public async Task<Question?> UpdateQuestion(Question question, Guid id)
+        public async Task<Question> UpdateQuestion(Question question, Guid id)
         {
             var newQuestion = await _context.Questions.Where(q => q.Id == id).FirstAsync();
 
@@ -70,7 +71,8 @@ namespace Questions_and_Answers_API.Services
             if (string.IsNullOrEmpty(question.Title) || string.IsNullOrEmpty(question.Description) || (newQuestion == null) ||
                 ((question.UserId != newQuestion.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
             {
-                return null;
+                throw new BadRequestException("Your question doesn't contain a title or description " +
+                    "or you are not the owner of this question!");
             }
 
             newQuestion.Title = question.Title;
@@ -92,7 +94,7 @@ namespace Questions_and_Answers_API.Services
 
             if ((oldQuesiton == null) ||
                 ((question.UserId != oldQuesiton.UserId) && (!await _userManager.IsInRoleAsync(user, Admin_Const))))
-                return await GetAlQuestionsAsync();
+                throw new BadRequestException("You are not the owner of this question!");
 
             _context.Questions.Remove(oldQuesiton);
 
